@@ -2,20 +2,18 @@
 
 ## Table of Contents
 * [Overview](#overview)
-* [Defining the Subset of Python](#pythonSubset)
-* [Software Setup / Compiling for Real Hardware](#setup)
-* [References & Source Material](#references)
+* [Defining the Subset of Python](#defining-the-subset-of-python)
+* [References & Source Material](#references-&-source-material)
+* [Software Setup / Compiling for Real Hardware](#software-setup)
 
-<a name="overview"></a>
 ## Overview
 
 PiFive translates a sub-set of python source code to RISC-V assembly language.
 
-![](PiFive.png)
+![](reference/images/PiFive.png)
 
 Throughout the semester I will be organizing the project using Trello a software organization tool; a link to that board can be found [here](https://trello.com/b/26kdfMJz/senior-project). In addition, I will be updating a slide deck to organize my thoughts and build towards the final presentation; a link to that slide deck can be found here [here](https://docs.google.com/presentation/d/1rj_9L3pqZ0XZLCmFNdeaLof7cu6qTt5_TXOBURj3eK4/edit#slide=id.g113c484dce6_0_274).
 
-<a name="pythonSubset"></a>
 ## Defining the Subset of Python 
 
 Making a fully compliant Python-to-RISC-V transpiler in a semester is an infeasible goal for myself. In other words, a transpiler that could take in any valid Python script and output RISC-V assembly is probably not doable (by myself) in this time-frame because of all the glorius syntactic-sugar that Python allows. It natrually follows that I have decided to utilize a subset of Python, but how does one define a subset? In other words, what notation can be utilized to tersely express what `PiFive` does.
@@ -101,7 +99,6 @@ module Python
 
 Nodes which might be added depending on time could be `ast.List`, `ast.Subscript`, `ast.Try`, `ast.ExceptHandler`, & `ast.Import`.
 
-<a name="references"></a>
 ## References & Source Material
 
 There are several references that I will place here which are either instructional or relevent in some way.
@@ -118,7 +115,6 @@ There are several references that I will place here which are either instruction
 8. *Book* : Engineering A Compiler, Cooper & Torczon
 9. *Website* : Python to C++ transpiler : [link](https://github.com/lukasmartinelli/py14) 
 
-<a name="setup"></a>
 ## Software Setup
 
 Aside from Python 3.9.7+, there are no software requirements in order to run this project. However, one of the goals of this project is for the output assembly from `PiFive` to be compiled down to a raw executable which can be run on real hardware (i.e. HiFive Unmatched). If you only care about seeing the assembly output from PiFive, then this step is unnecessary, however if you either have the HiFive Unmatched, or are just intereseted in seeing how the assembly can be compiled to an executable, then you can follow these steps to install the compiler:
