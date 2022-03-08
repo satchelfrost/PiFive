@@ -1,1 +1,0 @@
-## Example handwritten C code
