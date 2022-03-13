@@ -1,6 +1,6 @@
 import ast
 from .scope import Scope, Variable
-from .asm_maker import AsmMaker
+from .instruction_maker import InstructionMaker
 from .register_pool import RegPool
 from .registers import Reg, RegType
 
@@ -8,13 +8,13 @@ class RISCV_Transpiler:
 
   def __init__(self):
     self.scope = Scope('global')
-    self.asm = AsmMaker()
+    self.instr = InstructionMaker()
     self.reg_pool = RegPool()
 
   def reset(self):
     self.scope = Scope('global')
     self.reg_pool.reset()
-    self.asm.reset()
+    self.instr.reset()
 
   def transpile(self, node):
     # Insert header here
@@ -87,10 +87,10 @@ class RISCV_Transpiler:
 
     # Create instruction depending on value to assign
     if isinstance(node.value, ast.Constant):
-      self.asm.load_imm(target_var.reg, self.visit(node.value))
+      self.instr.load_imm(target_var.reg, self.visit(node.value))
     elif isinstance(node.value, ast.Name):
       value_var : Variable = self.visit(node.value)
-      self.asm.mv(target_var.reg, value_var.reg)
+      self.instr.mv(target_var.reg, value_var.reg)
     else:
       raise RuntimeError(f"Assignment of value \"{node.value}\" not accepted!")
 
