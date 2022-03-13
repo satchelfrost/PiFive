@@ -5,7 +5,6 @@ from .register_pool import RegPool
 from .registers import Reg, RegType
 
 class RISCV_Transpiler:
-
   def __init__(self):
     self.scope = Scope('global')
     self.instr = InstructionMaker()
@@ -34,13 +33,7 @@ class RISCV_Transpiler:
       self.visit(stmt)
   
   def visit_FunctionDef(self, node : ast.FunctionDef):
-    self.function_header(node.name)
-    self.buffer.write(node.name + ":\n")
-    self.function_prolog(24) # Hardcode for now, until we figure out how to determine framesize
-    for stmt in node.body:
-      self.visit(stmt)
-    self.function_epilogue(24) # Hardcode for now, until we figure out how to determine framesize
-    self.function_footer(node.name)
+    pass
 
   def visit_Return(self, node : ast.Return):
     self.visit(node.value)
@@ -95,13 +88,10 @@ class RISCV_Transpiler:
       raise RuntimeError(f"Assignment of value \"{node.value}\" not accepted!")
 
   def visit_AnnAssign(self, node : ast.AnnAssign):
-    cpp_type = self.type_lookup(node.annotation.id) 
-    self.buffer.write(cpp_type)
-    self.visit(node.target)
-    self.visit(node.value)
+    pass
 
   def visit_Mult(self, node : ast.Mult):
-    self.buffer.writeln("\tmul")
+    pass
 
   def visit_For(self, node : ast.For):
     pass
@@ -115,23 +105,17 @@ class RISCV_Transpiler:
   def visit_Expr():
     pass
 
-  def BoolOp(self, node : ast.BoolOp):
+  def visit_BoolOp(self, node : ast.BoolOp):
     pass
 
-  def BinOp(self, node : ast.BinOp):
+  def visit_BinOp(self, node : ast.BinOp):
     pass
 
-  def UnaryOp(self, node : ast.UnaryOp):
+  def visit_UnaryOp(self, node : ast.UnaryOp):
     pass
 
-  def Call(self, node : ast.Call):
+  def visit_Call(self, node : ast.Call):
     pass
 
-  def Constant(self, node : ast.Constant):
-    pass
-
-  def Attribute(self, node : ast.Attribute):
-    pass
-
-  def Name(self, node : ast.Name):
+  def visit_Attribute(self, node : ast.Attribute):
     pass
