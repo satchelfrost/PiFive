@@ -9,8 +9,8 @@ class TestTranspiler(unittest.TestCase):
     self.rv.reset()
     node = parse("\n".join(src_in))
     self.rv.transpile(node)
-    if self.rv.asm.instr_buffer:
-      self.assertEqual(src_out, self.rv.asm.instr_buffer)
+    if self.rv.instr.instr_buffer:
+      self.assertEqual(src_out, self.rv.instr.instr_buffer)
     else:
       self.fail("Instruction buffer was empty")
 

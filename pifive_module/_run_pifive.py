@@ -8,4 +8,4 @@ def run_pifive(file_name, verbose):
     rv_transpiler = RISCV_Transpiler()
     rv_transpiler.transpile(node)
     if verbose:
-      rv_transpiler.asm.print()
+      rv_transpiler.instr.print()
