@@ -2,13 +2,14 @@ from .registers import Reg, RegType
 
 class RegPool:
   def __init__(self):
-    # Initially all registers are available
+    self.reset()
+
+  def reset(self):
     self.available_regs = [True for i in range(len(Reg))]
   
   def get_next_reg(self, reg_type : RegType):
     # Get next available register of a particular type
     for reg in reg_type.value:
-      print(reg.name)
       if self.available_regs[reg.value]:
         self.available_regs[reg.value] = False
         return reg
