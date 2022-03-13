@@ -1,9 +1,9 @@
 def square(x : int) -> int:
-    return x * x
+  return x * x
 
 def cube (x : int) -> int:
-    return x * square(x)
+  return x * square(x)
 
 def main():
-    a = cube(3)
-    print(a)
+  a = cube(3)
+  print(a)

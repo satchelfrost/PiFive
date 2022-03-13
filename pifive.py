@@ -2,10 +2,10 @@ import argparse as ap
 import pifive_module as pifive
 
 def run_pifive(args):
-    pifive.run_pifive(args.input_file)
+  pifive.run_pifive(args.input)
 
 def run_tests(args):
-    pifive.run_tests()
+  pifive.run_tests()
 
 # Add arguments to argument parser 
 parser = ap.ArgumentParser()
