@@ -42,3 +42,12 @@ class TestTranspiler(unittest.TestCase):
       "\tmv t0, t1"
     ]
     self.transform(src_in, src_out)
+
+  # def test_reassign(self):
+  #   src_in = [
+  #     "a = 1 + 2 + 3",
+  #   ]
+  #   src_out = [
+  #     "Blarg",
+  #   ]
+  #   self.transform(src_in, src_out)

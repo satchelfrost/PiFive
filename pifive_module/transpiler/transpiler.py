@@ -47,9 +47,9 @@ class RISCV_Transpiler:
     self.visit(node.value)
 
   def visit_BinOp(self, node : ast.BinOp):
+    self.visit(node.right)
     self.visit(node.left)
     self.visit(node.op)
-    self.visit(node.right)
 
   def visit_Constant(self, node : ast.Constant):
     pass
@@ -95,6 +95,7 @@ class RISCV_Transpiler:
       value_var : Variable = self.sym_tab.lookup_symbol(node.value.id, self.scope.frame, SymbolKind.variable)
       target_var : Variable = self.sym_tab.lookup_symbol(target.id, self.scope.frame, SymbolKind.variable)
       self.assign_reg_if_none(value_var)
+      self.assign_reg_if_none(target_var)
       self.instr.mv(target_var.reg, value_var.reg)
 
     else:
