@@ -3,6 +3,7 @@ from .registers import Reg, RegType
 class RegPool:
   def __init__(self):
     self.reset()
+    # self.mru_reg : Reg = None
 
   def reset(self):
     '''resets all registers to available'''
@@ -13,6 +14,7 @@ class RegPool:
     for reg in reg_type.value:
       if self.available_regs[reg.value]:
         self.available_regs[reg.value] = False
+        # self.mru_reg = reg
         return reg
     return None
 

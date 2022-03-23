@@ -5,6 +5,9 @@ from .registers import Reg
 class SymbolTable:
   def __init__(self):
     '''frame -> symbol_list'''
+    self.reset()
+  
+  def reset(self):
     self.symbol_table : dict[str,list[Symbol]] = {}
 
   def free_and_save_reg(self, frame : str, instr : InstructionMaker) -> Reg:
