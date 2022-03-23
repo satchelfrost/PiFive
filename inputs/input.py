@@ -1,8 +1,9 @@
-a = 1
-b = 2
-c = 5
-a = b
-b = c
+a = 1 - 41
+# a = 1
+# b = 2
+# c = 5
+# a = b
+# b = c
 # c = a + b
 
 # def square(x : int) -> int:
