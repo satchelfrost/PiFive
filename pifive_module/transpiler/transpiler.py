@@ -13,7 +13,7 @@ class RISCV_Transpiler:
     self.reg_pool = RegPool()
 
   def reset(self):
-    self.scope = Scope('global')
+    self.scope = Scope()
     self.reg_pool.reset()
     self.instr.reset()
     self.sym_tab.reset()
@@ -73,18 +73,24 @@ class RISCV_Transpiler:
     self.anonymous_push(str(node.value))
 
   def visit_Name(self, node : ast.Name):
-    # Check if variable exists in current scope
+    # If var is not in current scope it's value will be None
     var : Variable = self.scope.lookup_var(node.id)
 
     # Check the node's context: Load, Store, or Del
     if isinstance(node.ctx, ast.Load):
       if not var:
         raise RuntimeError(f'Variable "{node.id}" undefined in current scope. Cannot load.')
+      self.instr.comment_reg_push(var.reg, var.name)
+      self.instr.push_reg(var.reg)
+      self.reg_pool.free_reg(var.reg)
+      self.instr.comment_reg_free(var.reg)
+      var.reg = None # register has been freed, so dissociate it from variable
+      self.instr.newline()
     elif isinstance(node.ctx, ast.Store):
       if not var:
-        new_var = Variable(node.id)
-        self.scope.add_var(new_var)
-        self.sym_tab.add_symbol(self.scope.frame, new_var)
+        var = Variable(node.id)
+        self.scope.add_var(var)
+        self.sym_tab.add_symbol(self.scope.frame, var)
     else:
       raise RuntimeError(f'Contenxt type "{node.ctx}" unsupported in visit_Name().')
 
@@ -102,12 +108,12 @@ class RISCV_Transpiler:
     self.visit(target)
     self.visit(node.value)
 
-    target_var : Variable = self.sym_tab.lookup_symbol(target.id, self.scope.frame, SymbolKind.variable)
+    target_var : Variable = self.scope.lookup_var(target.id)
     self.assign_reg_if_none(target_var)
     self.instr.comment_assign(target_var.name)
 
     if isinstance(node.value, ast.Name):
-      value_var : Variable = self.sym_tab.lookup_symbol(node.value.id, self.scope.frame, SymbolKind.variable)
+      value_var : Variable = self.scope.lookup_var(node.value.id)
       self.assign_reg_if_none(value_var)
       self.instr.mv(target_var.reg, value_var.reg)
     else:

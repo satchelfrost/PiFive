@@ -87,6 +87,9 @@ class InstructionMaker:
   def comment_binop_push(self, binop : BinOp, reg : Reg):
     self.comment(f'Push {binop.to_english().lower()}-result from "{reg.name}" to stack')
 
+  def comment_reg_push(self, reg : Reg, var : str):
+    self.comment(f'Push variable "{var}" in register "{reg.name}" to stack')
+
   def comment_assign(self, name : str):
       self.comment(f'Target assignment variable "{name}".')
 
