@@ -10,10 +10,10 @@ class SymbolTable:
   def reset(self):
     self.symbol_table : dict[str,list[Symbol]] = {}
 
-  def free_and_save_reg(self, frame : str, instr : InstructionMaker) -> Reg:
+  def save_and_free_reg(self, frame : str, instr : InstructionMaker) -> Reg:
     pass
 
-  def free_and_save_all_regs(self, frame : str, instr : InstructionMaker):
+  def save_and_free_all_regs(self, frame : str, instr : InstructionMaker):
     pass
 
   def lookup_symbol(self, symbol_name : str, frame : str, kind : SymbolKind):

@@ -25,7 +25,7 @@ class RegPool:
         return True
     return False
   
-  def restore_reg(self, reg : Reg):
+  def free_reg(self, reg : Reg):
     '''Make a register available again'''
     self.available_regs[reg.value] = True
 
