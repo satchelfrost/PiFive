@@ -3,7 +3,7 @@ from .scope import Scope, Variable
 from .instruction_maker import InstructionMaker, BinOp
 from .register_pool import RegPool
 from .registers import Reg, RegType
-from .symbol_table import SymbolTable, SymbolKind
+from .symbol_table import SymbolTable
 
 class RISCV_Transpiler:
   def __init__(self, comments_on=False):
@@ -108,18 +108,12 @@ class RISCV_Transpiler:
     self.visit(target)
     self.visit(node.value)
 
+    # Assign variable by popping the stack
     target_var : Variable = self.scope.lookup_var(target.id)
     self.assign_reg_if_none(target_var)
     self.instr.comment_assign(target_var.name)
-
-    if isinstance(node.value, ast.Name):
-      value_var : Variable = self.scope.lookup_var(node.value.id)
-      self.assign_reg_if_none(value_var)
-      self.instr.mv(target_var.reg, value_var.reg)
-    else:
-      self.instr.comment_pop(target_var.reg)
-      self.instr.pop(target_var.reg)
-    
+    self.instr.comment_pop(target_var.reg)
+    self.instr.pop(target_var.reg)
     self.instr.newline()
 
   def visit_AnnAssign(self, node : ast.AnnAssign):
