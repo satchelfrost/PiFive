@@ -1,6 +1,6 @@
 import ast
 from .scope import Scope, Variable
-from .instruction_maker import InstructionMaker, BinOp
+from .instruction_maker import InstructionMaker, BinOp, BranchOp
 from .register_pool import RegPool
 from .registers import Reg, RegType
 from .symbol_table import SymbolTable
@@ -46,7 +46,11 @@ class RISCV_Transpiler:
     self.instr.comment_reg_free(temp)
     self.instr.newline()
 
+  def create_label(self, name : str):
+    return f"{name}_fr_{self.scope.frame}_sc_{self.scope.scope_id}_num_{self.scope.get_next_label_number()}"
+
   def visit(self, node):
+    '''Generic visitor for all nodes'''
     name = node.__class__.__name__
     attr = getattr(self, 'visit_' + name, None)
     if attr:
@@ -120,26 +124,26 @@ class RISCV_Transpiler:
     pass
 
   def generic_binop(self, binop : BinOp):
-    temp_1 : Reg = self.get_new_temp()
-    self.instr.comment_pop(temp_1)
-    self.instr.pop(temp_1)
+    right : Reg = self.get_new_temp()
+    self.instr.comment_pop(right)
+    self.instr.pop(right)
     self.instr.newline()
 
-    temp_2 : Reg = self.get_new_temp()
-    self.instr.comment_pop(temp_2)
-    self.instr.pop(temp_2)
+    left : Reg = self.get_new_temp()
+    self.instr.comment_pop(left)
+    self.instr.pop(left)
     self.instr.newline()
 
-    self.instr.comment_binop(binop, temp_2)
-    self.instr.binop(binop.value, temp_2, temp_2, temp_1)
-    self.reg_pool.free_reg(temp_1)
-    self.instr.comment_reg_free(temp_1)
+    self.instr.comment_binop(binop, left)
+    self.instr.binop(binop, left, left, right)
+    self.reg_pool.free_reg(right)
+    self.instr.comment_reg_free(right)
     self.instr.newline()
 
-    self.instr.comment_binop_push(binop, temp_2)
-    self.instr.push_reg(temp_2)
-    self.reg_pool.free_reg(temp_2)
-    self.instr.comment_reg_free(temp_2)
+    self.instr.comment_binop_push(binop, left)
+    self.instr.push_reg(left)
+    self.reg_pool.free_reg(left)
+    self.instr.comment_reg_free(left)
     self.instr.newline()
 
   def visit_Add(self, node : ast.Add):
@@ -169,6 +173,75 @@ class RISCV_Transpiler:
   def visit_Div(self, node : ast.Div):
     self.generic_binop(BinOp.DIV)
 
+  def visit_Compare(self, node : ast.Compare):
+    self.visit(node.left)
+
+    if len(node.comparators) != 1:
+      raise RuntimeError("Only single comparison allowed.")
+    self.visit(node.comparators[0])
+
+    if len(node.ops) != 1:
+      raise RuntimeError("Only single comparison operator allowed.")
+    self.visit(node.ops[0])
+
+  def generic_branchop(self, branchop : BranchOp):
+    right : Reg = self.get_new_temp()
+    self.instr.comment_pop(right)
+    self.instr.pop(right)
+    self.instr.newline()
+
+    left : Reg = self.get_new_temp()
+    self.instr.comment_pop(left)
+    self.instr.pop(left)
+    self.instr.newline()
+
+    # Create a result register to push the result of the comparison
+    result : Reg = self.get_new_temp()
+    self.instr.comment_branchop_result(branchop, True)
+    self.instr.set_true(result)
+    self.instr.newline()
+
+    # Carry out the comparison
+    self.instr.comment_branchop(branchop, left, right)
+    label = self.create_label(branchop.name)
+    self.instr.branchop(branchop, left, right, label)
+    self.reg_pool.free_reg(right)
+    self.reg_pool.free_reg(left)
+    self.instr.comment_reg_free(right)
+    self.instr.comment_reg_free(left)
+    self.instr.newline()
+
+    # No branch taken label
+    self.instr.comment_branchop_result(branchop, False)
+    self.instr.set_false(result)
+    self.instr.newline()
+
+    # Push the result to the stack
+    self.instr.label(label)
+    self.instr.comment_branchop_push(branchop, result)
+    self.instr.push_reg(result)
+    self.reg_pool.free_reg(result)
+    self.instr.comment_reg_free(result)
+    self.instr.newline()
+
+  def visit_Lt(self, node : ast.Lt):
+    self.generic_branchop(BranchOp.BLT)
+
+  def visit_LtE(self, node : ast.LtE):
+    self.generic_branchop(BranchOp.BLE)
+
+  def visit_Gt(self, node : ast.Gt):
+    self.generic_branchop(BranchOp.BGT)
+
+  def visit_GtE(self, node : ast.GtE):
+    self.generic_branchop(BranchOp.BGE)
+
+  def visit_Eq(self, node : ast.Eq):
+    self.generic_branchop(BranchOp.BEQ)
+
+  def visit_NotEq(self, node : ast.NotEq):
+    self.generic_branchop(BranchOp.BNE)
+
   def visit_For(self, node : ast.For):
     pass
 
@@ -176,7 +249,48 @@ class RISCV_Transpiler:
     pass
 
   def visit_If(self, node : ast.If):
-    pass
+    # Create a new scope
+    self.scope = Scope(name=self.scope.frame, parent=self.scope)
+
+    # Visit the test condition
+    self.visit(node.test)
+
+    label_else = self.create_label("else")
+    label_end = self.create_label("end")
+
+    # Grab the result of the test
+    result : Reg = self.get_new_temp()
+    self.instr.comment_pop(result)
+    self.instr.pop(result)
+    self.instr.newline()
+
+    # If the result is false, jump to the else block
+    self.instr.comment("If condition is false, jump to else")
+    self.instr.branch_zero(result, label_else)
+    self.reg_pool.free_reg(result)
+    self.instr.comment_reg_free(result)
+    self.instr.newline()
+
+    # Visit the body of the if
+    for statement in node.body:
+      self.visit(statement)
+
+    # Visit the orelse
+    if node.orelse:
+      self.instr.comment("If else wasn't taken, jump to end")
+      self.instr.jump_label(label_end)
+      self.instr.newline()
+
+    # Label the else/elsif
+    self.instr.label(label_else)
+
+    # Visit the orelse statements
+    for statement in node.orelse:
+      self.visit(statement)
+
+    # Label the end if necessary
+    if node.orelse:
+      self.instr.label(label_end)
 
   def visit_Expr(self, node : ast.Expr):
     pass
