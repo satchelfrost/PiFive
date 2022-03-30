@@ -70,6 +70,7 @@ module Python
          | UnaryOp(unaryop op, expr operand)
          | Call(expr func, expr* args, keyword* keywords)
          | Constant(constant value, string? kind)
+         | Compare(expr left, cmpop* ops, expr* comparators)
 
          -- the following expression can appear in assignment context
          | Attribute(expr value, identifier attr, expr_context ctx)
