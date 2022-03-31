@@ -119,7 +119,6 @@ class TestTranspiler(unittest.TestCase):
     ]
     return src_in, src_out
 
-
   def test_simple_binop_with_load(self):
     src_in = [
       "b = 41",
@@ -136,14 +135,14 @@ class TestTranspiler(unittest.TestCase):
       "\tsd t1, 0(sp)",
       "\taddi sp, sp, -8",
       "\tsd t0, 0(sp)",
-      "\tld t0, 0(sp)",
-      "\taddi sp, sp, 8",
       "\tld t1, 0(sp)",
       "\taddi sp, sp, 8",
-      "\tsub t1, t1, t0",
+      "\tld t2, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tsub t2, t2, t1",
       "\taddi sp, sp, -8",
-      "\tsd t1, 0(sp)",
-      "\tld t0, 0(sp)",
+      "\tsd t2, 0(sp)",
+      "\tld t1, 0(sp)",
       "\taddi sp, sp, 8"
     ]
     self.transforms(src_in, src_out)
@@ -227,14 +226,14 @@ class TestTranspiler(unittest.TestCase):
       "\tsd t2, 0(sp)",
       "\taddi sp, sp, -8",
       "\tsd t0, 0(sp)",
-      "\tld t0, 0(sp)",
-      "\taddi sp, sp, 8",
       "\tld t1, 0(sp)",
       "\taddi sp, sp, 8",
-      "\tsub t1, t1, t0",
+      "\tld t2, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tsub t2, t2, t1",
       "\taddi sp, sp, -8",
-      "\tsd t1, 0(sp)",
-      "\tld t0, 0(sp)",
+      "\tsd t2, 0(sp)",
+      "\tld t1, 0(sp)",
       "\taddi sp, sp, 8"
     ]
     self.transforms(src_in, src_out)
