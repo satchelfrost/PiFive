@@ -12,6 +12,7 @@ class RISCV_Transpiler:
     self.instr = InstructionMaker(comments_on)
     self.reg_pool = RegPool()
 
+  ### Helper Functions ###
   def reset(self):
     self.scope = Scope()
     self.reg_pool.reset()
@@ -49,6 +50,7 @@ class RISCV_Transpiler:
   def create_label(self, name : str):
     return f"{name}_fr_{self.scope.frame}_sc_{self.scope.scope_id}_num_{self.scope.get_next_label_number()}"
 
+  #### Visitor Nodes ####
   def visit(self, node):
     '''Generic visitor for all nodes'''
     name = node.__class__.__name__
@@ -86,9 +88,6 @@ class RISCV_Transpiler:
         raise RuntimeError(f'Variable "{node.id}" undefined in current scope. Cannot load.')
       self.instr.comment_reg_push(var.reg, var.name)
       self.instr.push_reg(var.reg)
-      self.reg_pool.free_reg(var.reg)
-      self.instr.comment_reg_free(var.reg)
-      var.reg = None # register has been freed, so dissociate it from variable
       self.instr.newline()
     elif isinstance(node.ctx, ast.Store):
       if not var:
@@ -119,9 +118,6 @@ class RISCV_Transpiler:
     self.instr.comment_pop(target_var.reg)
     self.instr.pop(target_var.reg)
     self.instr.newline()
-
-  def visit_AnnAssign(self, node : ast.AnnAssign):
-    pass
 
   def generic_binop(self, binop : BinOp):
     right : Reg = self.get_new_temp()
@@ -184,7 +180,7 @@ class RISCV_Transpiler:
       raise RuntimeError("Only single comparison operator allowed.")
     self.visit(node.ops[0])
 
-  def generic_branchop(self, branchop : BranchOp):
+  def generic_branch_cmp(self, branchop : BranchOp):
     right : Reg = self.get_new_temp()
     self.instr.comment_pop(right)
     self.instr.pop(right)
@@ -225,28 +221,54 @@ class RISCV_Transpiler:
     self.instr.newline()
 
   def visit_Lt(self, node : ast.Lt):
-    self.generic_branchop(BranchOp.BLT)
+    self.generic_branch_cmp(BranchOp.BLT)
 
   def visit_LtE(self, node : ast.LtE):
-    self.generic_branchop(BranchOp.BLE)
+    self.generic_branch_cmp(BranchOp.BLE)
 
   def visit_Gt(self, node : ast.Gt):
-    self.generic_branchop(BranchOp.BGT)
+    self.generic_branch_cmp(BranchOp.BGT)
 
   def visit_GtE(self, node : ast.GtE):
-    self.generic_branchop(BranchOp.BGE)
+    self.generic_branch_cmp(BranchOp.BGE)
 
   def visit_Eq(self, node : ast.Eq):
-    self.generic_branchop(BranchOp.BEQ)
+    self.generic_branch_cmp(BranchOp.BEQ)
 
   def visit_NotEq(self, node : ast.NotEq):
-    self.generic_branchop(BranchOp.BNE)
-
-  def visit_For(self, node : ast.For):
-    pass
+    self.generic_branch_cmp(BranchOp.BNE)
 
   def visit_While(self, node : ast.For):
-    pass
+    # Create a new scope
+    self.scope = Scope(name=self.scope.frame, parent=self.scope)
+
+    # Create a labels for the loop and break
+    label_while = self.create_label("while")
+    label_break = self.create_label("break")
+
+    # Create a label and visit the test
+    self.instr.label(label_while)
+    self.visit(node.test)
+    result : Reg = self.get_new_temp()
+    self.instr.comment_pop(result)
+    self.instr.pop(result)
+    self.instr.newline()
+
+    # Get the result of the test and branch to the break label if false
+    self.instr.comment("Break if false")
+    self.instr.branch_zero(result, label_break)
+    self.reg_pool.free_reg(result)
+    self.instr.comment_reg_free(result)
+    self.instr.newline()
+
+    # Visit the body
+    for statement in node.body:
+      self.visit(statement)
+    self.instr.jump_label(label_while)
+    self.instr.label(label_break)
+
+    # Reset the scope
+    self.scope = self.scope.parent
 
   def visit_If(self, node : ast.If):
     # Create a new scope
@@ -292,17 +314,11 @@ class RISCV_Transpiler:
     if node.orelse:
       self.instr.label(label_end)
 
+    # Reset the scope
+    self.scope = self.scope.parent
+
   def visit_Expr(self, node : ast.Expr):
-    pass
-
-  def visit_BoolOp(self, node : ast.BoolOp):
-    pass
-
-  def visit_UnaryOp(self, node : ast.UnaryOp):
-    pass
+    self.visit(node.value)
 
   def visit_Call(self, node : ast.Call):
-    pass
-
-  def visit_Attribute(self, node : ast.Attribute):
     pass
