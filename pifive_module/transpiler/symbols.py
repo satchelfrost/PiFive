@@ -21,4 +21,4 @@ class Function(Symbol):
   def __init__(self, name, args, ret_reg=None):
     super().__init__(name, kind=SymbolKind.function)
     self.ret : Reg = ret_reg
-    self.args : list[Reg] = args
+    self.args : list[Variable] = args

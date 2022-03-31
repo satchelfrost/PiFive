@@ -108,6 +108,18 @@ class InstructionMaker:
 
   def jump_label(self, label : str):
     self.instr_buffer.append(f"\tj {label}")
+  
+  def prologue(self):
+    self.instr_buffer.append("\taddi sp, sp, -16")
+    self.instr_buffer.append("\tsd ra, 8(sp)")
+    self.instr_buffer.append("\tsd fp, 0(sp)")
+    self.instr_buffer.append("\taddi fp, sp, 16")
+
+  def epilogue(self):
+    self.instr_buffer.append("\tld ra, 8(sp)")
+    self.instr_buffer.append("\tld fp, 0(sp)")
+    self.instr_buffer.append("\taddi sp, sp, 16")
+    self.instr_buffer.append("\tret")
 
   #### Assembly comment section - not actual instructions! ####
   def comment(self, comment):

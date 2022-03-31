@@ -30,8 +30,12 @@
 # b = 37 + a
 # c = 41 + a
 
-b = 41
-a = 1 - b
+# b = 41
+# if 3 < 4:
+#   a = 1 - b
+
+def function(a, b):
+  return a + b
 
 # i = 0
 # while i < 10:

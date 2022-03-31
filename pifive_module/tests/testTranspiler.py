@@ -8,7 +8,11 @@ class TestTranspiler(unittest.TestCase):
   def transforms(self, src_in, src_out):
     self.rv.reset()
     node = parse("\n".join(src_in))
-    self.rv.transpile(node)
+    try:
+      self.rv.transpile(node)
+    except Exception as e:
+      print(e)
+      self.fail("Transpiler failed")
     if self.rv.instr.instr_buffer:
       self.assertEqual(src_out, self.rv.instr.instr_buffer)
     else:

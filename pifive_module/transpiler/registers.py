@@ -9,7 +9,7 @@ class Reg(Enum):
   t0 = 5
   t1 = 6
   t2 = 7
-  s0 = 8
+  fp = 8 # aka s0
   s1 = 9
   a0 = 10
   a1 = 11
@@ -45,7 +45,6 @@ class RegType(Enum):
     Reg.t6
   ]
   saved_regs = [
-    Reg.s0,
     Reg.s1,
     Reg.s2,
     Reg.s3,
@@ -59,7 +58,6 @@ class RegType(Enum):
     Reg.s11
   ]
   arg_regs = [
-    Reg.a0,
     Reg.a1,
     Reg.a2,
     Reg.a3,

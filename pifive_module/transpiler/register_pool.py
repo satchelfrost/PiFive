@@ -28,6 +28,11 @@ class RegPool:
   def free_reg(self, reg : Reg):
     '''Make a register available again'''
     self.available_regs[reg.value] = True
+  
+  def free_regs(self, regs):
+    '''Make a list of registers available again'''
+    for reg in regs:
+      self.free_reg(reg)
 
   def take_reg(self, reg : Reg):
     '''Make a register unavailable'''

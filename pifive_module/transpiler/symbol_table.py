@@ -4,10 +4,10 @@ from .registers import Reg
 
 class SymbolTable:
   def __init__(self):
-    '''frame -> symbol_list'''
     self.reset()
   
   def reset(self):
+    '''frame -> symbol_list'''
     self.symbol_table : dict[str,list[Symbol]] = {}
 
   def save_and_free_reg(self, frame : str, instr : InstructionMaker) -> Reg:

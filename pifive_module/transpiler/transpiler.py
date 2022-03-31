@@ -50,6 +50,14 @@ class RISCV_Transpiler:
   def create_label(self, name : str):
     return f"{name}_fr_{self.scope.frame}_sc_{self.scope.scope_id}_num_{self.scope.get_next_label_number()}"
 
+  def free_scope(self):
+    '''Free registers in current scope and set scope to parent'''
+    for reg in self.scope.get_regs_in_use():
+      self.reg_pool.free_reg(reg)
+      self.instr.comment_reg_free(reg)
+    self.instr.newline()
+    self.scope = self.scope.parent
+
   #### Visitor Nodes ####
   def visit(self, node):
     '''Generic visitor for all nodes'''
@@ -61,11 +69,26 @@ class RISCV_Transpiler:
       raise RuntimeError(f"{name} not supported. Node dump: {ast.dump(node)}")
 
   def visit_Module(self, node : ast.Module):
-    for stmt in node.body:
-      self.visit(stmt)
+    for statement in node.body:
+      self.visit(statement)
 
   def visit_FunctionDef(self, node : ast.FunctionDef):
-    pass
+    # Add this function to the current scope
+    func_args = [Variable(arg.arg) for arg in node.args.args]
+    self.scope.add_func(node.name, func_args)
+
+    # Create a new scope
+    self.scope = Scope(name=node.name, parent=self.scope)
+    self.scope.add_vars(func_args)
+    self.instr.label(node.name)
+    self.instr.prologue()
+
+    # Visit the function body
+    for statment in node.body:
+      self.visit(statment)
+
+    self.instr.epilogue()
+    self.free_scope()
 
   def visit_Return(self, node : ast.Return):
     self.visit(node.value)
@@ -79,21 +102,14 @@ class RISCV_Transpiler:
     self.anonymous_push(str(node.value))
 
   def visit_Name(self, node : ast.Name):
-    # If var is not in current scope it's value will be None
-    var : Variable = self.scope.lookup_var(node.id)
-
     # Check the node's context: Load, Store, or Del
     if isinstance(node.ctx, ast.Load):
-      if not var:
-        raise RuntimeError(f'Variable "{node.id}" undefined in current scope. Cannot load.')
+      var : Variable = self.scope.lookup_var(node.id)
       self.instr.comment_reg_push(var.reg, var.name)
       self.instr.push_reg(var.reg)
       self.instr.newline()
     elif isinstance(node.ctx, ast.Store):
-      if not var:
-        var = Variable(node.id)
-        self.scope.add_var(var)
-        self.sym_tab.add_symbol(self.scope.frame, var)
+      self.scope.add_var(Variable(node.id))
     else:
       raise RuntimeError(f'Contenxt type "{node.ctx}" unsupported in visit_Name().')
 
@@ -267,8 +283,7 @@ class RISCV_Transpiler:
     self.instr.jump_label(label_while)
     self.instr.label(label_break)
 
-    # Reset the scope
-    self.scope = self.scope.parent
+    self.free_scope()
 
   def visit_If(self, node : ast.If):
     # Create a new scope
@@ -314,8 +329,7 @@ class RISCV_Transpiler:
     if node.orelse:
       self.instr.label(label_end)
 
-    # Reset the scope
-    self.scope = self.scope.parent
+    self.free_scope()
 
   def visit_Expr(self, node : ast.Expr):
     self.visit(node.value)
