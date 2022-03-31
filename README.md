@@ -50,12 +50,8 @@ module Python
           | Return(expr? value)
 
           | Assign(expr* targets, expr value, string? type_comment)
-          | AugAssign(expr target, operator op, expr value)
-          -- 'simple' indicates that we annotate simple name without parens
-          | AnnAssign(expr target, expr annotation, expr? value, int simple)
 
           -- use 'orelse' because else is a keyword in target languages
-          | For(expr target, expr iter, stmt* body, stmt* orelse, string? type_comment)
           | While(expr test, stmt* body, stmt* orelse)
           | If(expr test, stmt* body, stmt* orelse)
 
@@ -64,16 +60,13 @@ module Python
           -- col_offset is the byte offset in the utf8 string the parser uses
           attributes (int lineno, int col_offset, int? end_lineno, int? end_col_offset)
 
-          -- BoolOp() can use left & right?
-    expr = BoolOp(boolop op, expr* values)
-         | BinOp(expr left, operator op, expr right)
+    expr = BinOp(expr left, operator op, expr right)
          | UnaryOp(unaryop op, expr operand)
          | Call(expr func, expr* args, keyword* keywords)
          | Constant(constant value, string? kind)
          | Compare(expr left, cmpop* ops, expr* comparators)
 
          -- the following expression can appear in assignment context
-         | Attribute(expr value, identifier attr, expr_context ctx)
          | Name(identifier id, expr_context ctx)
 
           -- col_offset is the byte offset in the utf8 string the parser uses
@@ -81,14 +74,10 @@ module Python
 
     expr_context = Load | Store | Del
 
-    boolop = And | Or
-
     operator = Add | Sub | Mult | MatMult | Div | Mod | Pow | LShift
                  | RShift | BitOr | BitXor | BitAnd | FloorDiv
 
-    unaryop = Invert | Not | UAdd | USub
-
-    cmpop = Eq | NotEq | Lt | LtE | Gt | GtE | Is | IsNot | In | NotIn
+    cmpop = Eq | NotEq | Lt | LtE | Gt | GtE
 
     arguments = (arg* posonlyargs, arg* args, arg? vararg, arg* kwonlyargs,
                  expr* kw_defaults, arg? kwarg, expr* defaults)
