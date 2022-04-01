@@ -16,6 +16,7 @@ class Variable(Symbol):
     self.type = type
     self.reg : Reg = reg
     self.offset = offset
+    self.reg_active = False
 
 class Function(Symbol):
   def __init__(self, name, args, ret_reg=None):
