@@ -108,7 +108,10 @@ class InstructionMaker:
 
   def jump_label(self, label : str):
     self.instr_buffer.append(f"\tj {label}")
-  
+
+  def call(self, label : str):
+    self.instr_buffer.append(f"\tcall {label}")
+
   def prologue(self):
     self.instr_buffer.append("\taddi sp, sp, -16")
     self.instr_buffer.append("\tsd ra, 8(sp)")
@@ -161,6 +164,12 @@ class InstructionMaker:
       self.comment(f'Set "{branchop.to_english()}"-result to true initially.')
     else:
       self.comment(f'Set "{branchop.to_english()}"-result to false if branch not taken.')
+
+  def comment_prologue(self, name : str):
+    self.comment(f'Prologue for "{name}"')
+
+  def comment_epilogue(self, name : str):
+    self.comment(f'Epilogue for "{name}"')
 
   def newline(self):
     if self.comments_on:
