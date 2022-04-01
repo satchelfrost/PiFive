@@ -1,5 +1,6 @@
 from .symbols import Variable
 from .symbols import Function
+from .register_pool import RegPool
 
 class Scope:
   def __init__(self, name='global', parent=None):
@@ -33,12 +34,15 @@ class Scope:
     else:
       raise RuntimeError(f'Variable "{var_name}" undefined in current scope. Cannot load.')
 
-  def get_regs_in_use(self):
-    regs_in_use = []
+  def deactivate_regs(self, reg_pool : RegPool):
+    '''Deacvtivates the registers of all variables in the current scope, and return those registers.'''
+    regs = []
     for var in self._variables.values():
       if var.reg is not None:
-        regs_in_use.append(var.reg)
-    return regs_in_use
+        regs.append(var.reg)
+        var.reg_active = False
+        reg_pool.free_reg(var.reg)
+    return regs
 
   def add_func(self, name, args):
     if name not in self._functions:
