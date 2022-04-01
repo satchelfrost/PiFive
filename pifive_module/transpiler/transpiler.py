@@ -25,12 +25,17 @@ class RISCV_Transpiler:
     self.visit(node)
     # Insert footer here
 
-  def assign_reg_if_none(self, var : Variable):
+  def assign_reg_if_inactive(self, var : Variable, reg_type : RegType):
     '''Check if variable has active register, and if not then get one'''
-    if not var.reg:
-      if not self.reg_pool.is_reg_type_avilable(RegType.temp_regs):
+    if not var.reg_active:
+      if not self.reg_pool.is_reg_type_avilable(reg_type):
         self.sym_tab.save_and_free_reg(self.scope.frame, self.instr)
-      var.reg = self.reg_pool.get_next_reg(RegType.temp_regs)
+      var.reg = self.reg_pool.get_next_reg(reg_type)
+      var.reg_active = True
+
+  def assign_regs_if_inactive(self, regs : list, reg_type : RegType):
+    for reg in regs:
+      self.assign_reg_if_inactive(reg, reg_type)
 
   def get_new_temp(self) -> Reg:
     '''Get a new temporary register'''
@@ -52,8 +57,7 @@ class RISCV_Transpiler:
 
   def free_scope(self):
     '''Free registers in current scope and set scope to parent'''
-    for reg in self.scope.get_regs_in_use():
-      self.reg_pool.free_reg(reg)
+    for reg in self.scope.deactivate_regs(self.reg_pool):
       self.instr.comment_reg_free(reg)
     self.instr.newline()
     self.scope = self.scope.parent
@@ -75,23 +79,37 @@ class RISCV_Transpiler:
   def visit_FunctionDef(self, node : ast.FunctionDef):
     # Add this function to the current scope
     func_args = [Variable(arg.arg) for arg in node.args.args]
+    self.assign_regs_if_inactive(func_args, RegType.arg_regs)
     self.scope.add_func(node.name, func_args)
 
     # Create a new scope
     self.scope = Scope(name=node.name, parent=self.scope)
     self.scope.add_vars(func_args)
     self.instr.label(node.name)
+    self.instr.comment_prologue(node.name)
     self.instr.prologue()
+    self.instr.newline()
 
     # Visit the function body
     for statment in node.body:
       self.visit(statment)
 
+    # Check if the function has a return statement
+    # if not isinstance(node.body[-1], ast.Return):
+    #   raise RuntimeError(f'Function "{node.name}" has no return statement.')
+
+    self.instr.comment_epilogue(node.name)
     self.instr.epilogue()
+    self.instr.newline()
     self.free_scope()
 
   def visit_Return(self, node : ast.Return):
     self.visit(node.value)
+
+    # Pop return value
+    self.instr.comment("Pop return value")
+    self.instr.pop(Reg.a0)
+    self.instr.newline()
 
   def visit_BinOp(self, node : ast.BinOp):
     self.visit(node.left)
@@ -129,7 +147,7 @@ class RISCV_Transpiler:
 
     # Assign variable by popping the stack
     target_var : Variable = self.scope.lookup_var(target.id)
-    self.assign_reg_if_none(target_var)
+    self.assign_reg_if_inactive(target_var, RegType.temp_regs)
     self.instr.comment_assign(target_var.name)
     self.instr.comment_pop(target_var.reg)
     self.instr.pop(target_var.reg)
@@ -334,5 +352,34 @@ class RISCV_Transpiler:
   def visit_Expr(self, node : ast.Expr):
     self.visit(node.value)
 
+    # This will be the case when the expression is a call to a function
+    self.instr.comment("Pop return value from expression")
+    self.instr.pop(Reg.a0)
+    self.instr.newline()
+
   def visit_Call(self, node : ast.Call):
-    pass
+    # First check if the number of arguments is correct
+    func = self.scope.lookup_func(node.func.id)
+    if len(func.args) != len(node.args):
+      raise RuntimeError(f'Incorrect number of arguments for function "{func.name}"!')
+
+    # Visit the arguments
+    self.instr.comment(f'Computing functional arguments for "{node.func.id}"')
+    for arg in node.args:
+      self.visit(arg)
+
+    # Ensure that the function is called with arguments in the right registers
+    for var_arg in func.args:
+      self.instr.comment_pop(var_arg.reg)
+      self.instr.pop(var_arg.reg)
+      self.instr.newline()
+
+    # Call the function
+    self.instr.comment(f'Call funcion "{node.func.id}"')
+    self.instr.call(node.func.id)
+    self.instr.newline()
+
+    # Push the result of the function call
+    self.instr.comment(f'Push result of "{node.func.id}" stored in "{Reg.a0.name}"')
+    self.instr.push_reg(Reg.a0)
+    self.instr.newline()
