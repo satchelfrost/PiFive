@@ -34,8 +34,23 @@
 # if 3 < 4:
 #   a = 1 - b
 
-def function(a, b):
-  return a + b
+# def function(a, b):
+#   c = a + b
+#   return c
+
+# function(1, function(2, 3))
+# a = 45
+# b = 54
+# function(a, b)
+
+def factorial(n):
+  if n == 0:
+    return 1
+  else:
+    return n * factorial(n-1)
+
+def main():
+  factorial(3)
 
 # i = 0
 # while i < 10:
