@@ -29,7 +29,7 @@ class RISCV_Transpiler:
     '''Check if variable has active register, and if not then get one'''
     if not var.reg_active:
       if not self.reg_pool.is_reg_type_avilable(reg_type):
-        self.sym_tab.save_and_free_reg(self.scope.frame, self.instr)
+        self.sym_tab.save_and_free_reg(self.scope.name, self.instr)
       var.reg = self.reg_pool.get_next_reg(reg_type)
       var.reg_active = True
 
@@ -40,7 +40,7 @@ class RISCV_Transpiler:
   def get_new_temp(self) -> Reg:
     '''Get a new temporary register'''
     if not self.reg_pool.is_reg_type_avilable(RegType.temp_regs):
-      self.sym_tab.save_and_free_reg(self.scope.frame, self.instr)
+      self.sym_tab.save_and_free_reg(self.scope.name, self.instr)
     return self.reg_pool.get_next_reg(RegType.temp_regs)
 
   def anonymous_push(self, value : str):
@@ -53,7 +53,7 @@ class RISCV_Transpiler:
     self.instr.newline()
 
   def create_label(self, name : str):
-    return f"{name}_fr_{self.scope.frame}_sc_{self.scope.scope_id}_num_{self.scope.get_next_label_number()}"
+    return f"{name}_{self.scope.name}_sc_{self.scope.scope_num}_lab_{self.scope.get_next_label_number()}"
 
   def free_scope(self):
     '''Free registers in current scope and set scope to parent'''
@@ -115,7 +115,7 @@ class RISCV_Transpiler:
     self.instr.newline()
 
     # Add epilogue to return
-    self.instr.comment_epilogue(self.scope.frame)
+    self.instr.comment_epilogue(self.scope.name)
     self.instr.epilogue() # epilogue includes "ret" instruction
     self.instr.newline()
 
@@ -282,7 +282,7 @@ class RISCV_Transpiler:
 
   def visit_While(self, node : ast.For):
     # Create a new scope
-    self.scope = Scope(name=self.scope.frame, parent=self.scope)
+    self.scope = Scope(name=self.scope.name, parent=self.scope)
 
     # Create a labels for the loop and break
     label_while = self.create_label("while")
@@ -313,7 +313,7 @@ class RISCV_Transpiler:
 
   def visit_If(self, node : ast.If):
     # Create a new scope
-    self.scope = Scope(name=self.scope.frame, parent=self.scope)
+    self.scope = Scope(name=self.scope.name, parent=self.scope)
 
     # Visit the test condition
     self.visit(node.test)
