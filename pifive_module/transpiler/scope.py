@@ -21,7 +21,10 @@ class Scope:
     return self._label_counter
 
   def add_var(self, var : Variable):
-    if var.name not in self._variables:
+    '''Attempts to add variable unless it already exists'''
+    try:
+      self.lookup_var(var.name)
+    except:
       self._variables[var.name] = var
 
   def add_vars(self, vars : list):
