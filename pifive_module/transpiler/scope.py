@@ -4,15 +4,17 @@ from .register_pool import RegPool
 
 class Scope:
   def __init__(self, name='global', parent=None):
-    self.frame = name
+    self.name = name
     self.parent : Scope = parent
     self._variables : dict[str, Variable] = {}
     self._functions : dict[str, Function] = {}
     self._label_counter = -1
-    if parent is not None:
-      self.scope_id = self.parent.scope_id + 1
-    else:
-      self.scope_id = 0
+    self.num_children = 0
+    self.scope_num = 0
+
+    if parent:
+      self.parent.num_children += 1
+      self.scope_num = self.parent.num_children + 1
 
   def get_next_label_number(self):
     self._label_counter += 1
