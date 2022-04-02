@@ -53,21 +53,40 @@
 #   a = factorial(3 + 4) * 123
 #   return 0
 
-def factorial(n):
-  if n == 0:
-    return 1
-  else:
-    return n * factorial(n - 1)
+# def factorial(n):
+#   if n == 0:
+#     return 1
+#   return n * factorial(n - 1)
 
-def main():
-  factorial(1)
-  return 0
+# def main():
+#   factorial(1)
+#   return 0
+
+# scope_0 = 0
+# def main():
+#   scope_1 = 1 + 1
+  
+#   if 2 < 3:
+#     scope_2 = 3
+#   if 2 > 3:
+#     scope_3  = 4
+
 
 # i = 0
 # while i < 10:
 #   i = i + 1
-#   a = 0
+  # a = 0
 # b = a
+
+def loop_n(n):
+  i = n
+  while i < 10:
+    i = i + 1
+  return 0
+
+# loop_n(10)
+
+
 
 
 # a = 1
