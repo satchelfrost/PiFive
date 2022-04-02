@@ -122,6 +122,9 @@ class InstructionMaker:
     self.instr_buffer.append("\tld ra, 8(sp)")
     self.instr_buffer.append("\tld fp, 0(sp)")
     self.instr_buffer.append("\taddi sp, sp, 16")
+    self.ret()
+
+  def ret(self):
     self.instr_buffer.append("\tret")
 
   #### Assembly comment section - not actual instructions! ####
