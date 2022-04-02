@@ -90,25 +90,33 @@ class RISCV_Transpiler:
     self.instr.prologue()
     self.instr.newline()
 
-    # Visit the function body
-    for statment in node.body:
-      self.visit(statment)
+    # Visit statements in function body
+    for statement in node.body:
+      self.visit(statement)
 
-    # Check if the function has a return statement
-    # if not isinstance(node.body[-1], ast.Return):
-    #   raise RuntimeError(f'Function "{node.name}" has no return statement.')
+    # Force a void-return if no return exists
+    if not isinstance(node.body[-1], ast.Return):
+      self.instr.comment("Automatic void-return")
+      self.instr.load_imm(Reg.a0, 0)
+      self.instr.newline()
+      self.instr.comment_epilogue(node.name)
+      self.instr.epilogue()
+      self.instr.newline()
 
-    self.instr.comment_epilogue(node.name)
-    self.instr.epilogue()
-    self.instr.newline()
     self.free_scope()
 
   def visit_Return(self, node : ast.Return):
+    # Visit the return value
     self.visit(node.value)
 
     # Pop return value
     self.instr.comment("Pop return value")
     self.instr.pop(Reg.a0)
+    self.instr.newline()
+
+    # Add epilogue to return
+    self.instr.comment_epilogue(self.scope.frame)
+    self.instr.epilogue() # epilogue includes "ret" instruction
     self.instr.newline()
 
   def visit_BinOp(self, node : ast.BinOp):
