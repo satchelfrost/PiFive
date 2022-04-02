@@ -43,14 +43,25 @@
 # b = 54
 # function(a, b)
 
+# def factorial(n):
+#   if n == 0:
+#     return 1
+#   # else:
+#   return n * factorial(n-1)
+
+# def main():
+#   a = factorial(3 + 4) * 123
+#   return 0
+
 def factorial(n):
   if n == 0:
     return 1
   else:
-    return n * factorial(n-1)
+    return n * factorial(n - 1)
 
 def main():
-  factorial(3)
+  factorial(1)
+  return 0
 
 # i = 0
 # while i < 10:
