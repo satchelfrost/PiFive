@@ -13,8 +13,8 @@ class Scope:
     self.scope_num = 0
 
     if parent:
-      self.parent.num_children += 1
       self.scope_num = self.parent.num_children + 1
+      self.parent.num_children += 1
 
   def get_next_label_number(self):
     self._label_counter += 1
@@ -53,7 +53,7 @@ class Scope:
     if name not in self._functions:
       self._functions[name] = Function(name, args)
     else:
-      raise RuntimeError(f'Function {name} already exists in the current scope!')
+      raise RuntimeError(f'Function "{name}" already exists in the current scope!')
   
   def lookup_func(self, name : str):
     if name in self._functions:
@@ -61,4 +61,4 @@ class Scope:
     elif self.parent is not None:
       return self.parent.lookup_func(name)
     else:
-      raise RuntimeError(f'Function {name} already exists in the current scope!')
+      raise RuntimeError(f'Function "{name}" does not exist in the current scope!')
