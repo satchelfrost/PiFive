@@ -29,7 +29,8 @@ class RISCV_Transpiler:
     '''Check if variable has active register, and if not then get one'''
     if not var.reg_active:
       if not self.reg_pool.is_reg_type_avilable(reg_type):
-        self.sym_tab.save_and_free_reg(self.scope.name, self.instr)
+        # self.sym_tab.save_and_free_reg(self.scope.name, self.instr)
+        raise RuntimeError("Program has exploded, there are no more registers.")
       var.reg = self.reg_pool.get_next_reg(reg_type)
       var.reg_active = True
 
@@ -40,7 +41,8 @@ class RISCV_Transpiler:
   def get_new_temp(self) -> Reg:
     '''Get a new temporary register'''
     if not self.reg_pool.is_reg_type_avilable(RegType.temp_regs):
-      self.sym_tab.save_and_free_reg(self.scope.name, self.instr)
+      # self.sym_tab.save_and_free_reg(self.scope.name, self.instr)
+      raise RuntimeError("Program has exploded, there are no more registers.")
     return self.reg_pool.get_next_reg(RegType.temp_regs)
 
   def anonymous_push(self, value : str):

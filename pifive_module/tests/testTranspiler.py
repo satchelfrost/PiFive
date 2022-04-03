@@ -241,3 +241,279 @@ class TestTranspiler(unittest.TestCase):
       "\taddi sp, sp, 8"
     ]
     self.transforms(src_in, src_out)
+
+  def simple_branch_cmp(self, left : str, op : str, right : str, instr : str):
+    src_in = [
+      f"{left} {op} {right}"
+    ]
+    src_out = [
+      "\taddi sp, sp, -8",
+      f"\tli t0, {left}",
+      "\tsd t0, 0(sp)",
+      "\taddi sp, sp, -8",
+      f"\tli t0, {right}",
+      "\tsd t0, 0(sp)",
+      "\tld t0, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tld t1, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tli t2, 1",
+      f"\t{instr} t1, t0, {instr.upper()}_global_sc_0_lab_0",
+      "\tli t2, 0",
+      f"{instr.upper()}_global_sc_0_lab_0:",
+      "\taddi sp, sp, -8",
+      "\tsd t2, 0(sp)",
+      "\tld a0, 0(sp)",
+      "\taddi sp, sp, 8"
+    ]
+    self.transforms(src_in, src_out)
+
+  def test_lt(self):
+    self.simple_branch_cmp("23", "<", "42", "blt")
+
+  def test_gt(self):
+    self.simple_branch_cmp("23", ">", "42", "bgt")
+
+  def test_eq(self):
+    self.simple_branch_cmp("23", "==", "42", "beq")
+
+  def test_ne(self):
+    self.simple_branch_cmp("23", "!=", "42", "bne")
+
+  def test_le(self):
+    self.simple_branch_cmp("23", "<=", "42", "ble")
+
+  def test_ge(self):
+    self.simple_branch_cmp("23", ">=", "42", "bge")
+
+  def test_cmp_assign(self):
+    src_in = [
+      "a = 23 > 25"
+    ]
+    src_out = [
+      "\taddi sp, sp, -8",
+      "\tli t0, 23",
+      "\tsd t0, 0(sp)",
+      "\taddi sp, sp, -8",
+      "\tli t0, 25",
+      "\tsd t0, 0(sp)",
+      "\tld t0, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tld t1, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tli t2, 1",
+      "\tbgt t1, t0, BGT_global_sc_0_lab_0",
+      "\tli t2, 0",
+      "BGT_global_sc_0_lab_0:",
+      "\taddi sp, sp, -8",
+      "\tsd t2, 0(sp)",
+      "\tld t0, 0(sp)",
+      "\taddi sp, sp, 8",
+    ]
+    self.transforms(src_in, src_out)
+
+  def test_if_elif_else(self):
+    src_in = [
+      "if 23 < 25:",
+      "  a = 32",
+      "elif 23 == 25:",
+      "  a = 4",
+      "else:",
+      "  a = 23"
+    ]
+    src_out = [
+      "\taddi sp, sp, -8",
+      "\tli t0, 23",
+      "\tsd t0, 0(sp)",
+      "\taddi sp, sp, -8",
+      "\tli t0, 25",
+      "\tsd t0, 0(sp)",
+      "\tld t0, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tld t1, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tli t2, 1",
+      "\tblt t1, t0, BLT_global_sc_2_lab_0",
+      "\tli t2, 0",
+      "BLT_global_sc_2_lab_0:",
+      "\taddi sp, sp, -8",
+      "\tsd t2, 0(sp)",
+      "\tld t0, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tbeqz t0, else_global_sc_2_lab_1",
+      "\taddi sp, sp, -8",
+      "\tli t0, 32",
+      "\tsd t0, 0(sp)",
+      "\tld t0, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tj end_global_sc_2_lab_2",
+      "else_global_sc_2_lab_1:",
+      "\taddi sp, sp, -8",
+      "\tli t1, 23",
+      "\tsd t1, 0(sp)",
+      "\taddi sp, sp, -8",
+      "\tli t1, 25",
+      "\tsd t1, 0(sp)",
+      "\tld t1, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tld t2, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tli t3, 1",
+      "\tbeq t2, t1, BEQ_global_sc_2_lab_0",
+      "\tli t3, 0",
+      "BEQ_global_sc_2_lab_0:",
+      "\taddi sp, sp, -8",
+      "\tsd t3, 0(sp)",
+      "\tld t1, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tbeqz t1, else_global_sc_2_lab_1",
+      "\taddi sp, sp, -8",
+      "\tli t1, 4",
+      "\tsd t1, 0(sp)",
+      "\tld t0, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tj end_global_sc_2_lab_2",
+      "else_global_sc_2_lab_1:",
+      "\taddi sp, sp, -8",
+      "\tli t1, 23",
+      "\tsd t1, 0(sp)",
+      "\tld t0, 0(sp)",
+      "\taddi sp, sp, 8",
+      "end_global_sc_2_lab_2:",
+      "end_global_sc_2_lab_2:"
+    ]
+    self.transforms(src_in, src_out)
+
+  def test_if_with_load(self):
+    src_in = [
+      "a = 50",
+      "if 23 < 25:",
+      "  a = 100",
+      "b = a + 4"
+    ]
+    src_out = [
+      "\taddi sp, sp, -8",
+      "\tli t0, 50",
+      "\tsd t0, 0(sp)",
+      "\tld t0, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\taddi sp, sp, -8",
+      "\tli t1, 23",
+      "\tsd t1, 0(sp)",
+      "\taddi sp, sp, -8",
+      "\tli t1, 25",
+      "\tsd t1, 0(sp)",
+      "\tld t1, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tld t2, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tli t3, 1",
+      "\tblt t2, t1, BLT_global_sc_2_lab_0",
+      "\tli t3, 0",
+      "BLT_global_sc_2_lab_0:",
+      "\taddi sp, sp, -8",
+      "\tsd t3, 0(sp)",
+      "\tld t1, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tbeqz t1, else_global_sc_2_lab_1",
+      "\taddi sp, sp, -8",
+      "\tli t1, 100",
+      "\tsd t1, 0(sp)",
+      "\tld t0, 0(sp)",
+      "\taddi sp, sp, 8",
+      "else_global_sc_2_lab_1:",
+      "\taddi sp, sp, -8",
+      "\tsd t0, 0(sp)",
+      "\taddi sp, sp, -8",
+      "\tli t1, 4",
+      "\tsd t1, 0(sp)",
+      "\tld t1, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tld t2, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tadd t2, t2, t1",
+      "\taddi sp, sp, -8",
+      "\tsd t2, 0(sp)",
+      "\tld t1, 0(sp)",
+      "\taddi sp, sp, 8"
+    ]
+    self.transforms(src_in, src_out)
+
+  def test_if_else(self):
+    src_in = [
+      "if 23 < 25:",
+      "  a = 100",
+      "else:",
+      "  a = 200"
+    ]
+    src_out = [
+      "\taddi sp, sp, -8",
+      "\tli t0, 23",
+      "\tsd t0, 0(sp)",
+      "\taddi sp, sp, -8",
+      "\tli t0, 25",
+      "\tsd t0, 0(sp)",
+      "\tld t0, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tld t1, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tli t2, 1",
+      "\tblt t1, t0, BLT_global_sc_2_lab_0",
+      "\tli t2, 0",
+      "BLT_global_sc_2_lab_0:",
+      "\taddi sp, sp, -8",
+      "\tsd t2, 0(sp)",
+      "\tld t0, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tbeqz t0, else_global_sc_2_lab_1",
+      "\taddi sp, sp, -8",
+      "\tli t0, 100",
+      "\tsd t0, 0(sp)",
+      "\tld t0, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tj end_global_sc_2_lab_2",
+      "else_global_sc_2_lab_1:",
+      "\taddi sp, sp, -8",
+      "\tli t1, 200",
+      "\tsd t1, 0(sp)",
+      "\tld t0, 0(sp)",
+      "\taddi sp, sp, 8",
+      "end_global_sc_2_lab_2:"
+    ]
+    self.transforms(src_in, src_out)
+
+  def test_function(self):
+    src_in = [
+      "def function(a, b):",
+      "  c = a + b",
+      "  return c"
+    ]
+    src_out = [
+      "function:",
+      "\taddi sp, sp, -16",
+      "\tsd ra, 8(sp)",
+      "\tsd fp, 0(sp)",
+      "\taddi fp, sp, 16",
+      "\taddi sp, sp, -8",
+      "\tsd a1, 0(sp)",
+      "\taddi sp, sp, -8",
+      "\tsd a2, 0(sp)",
+      "\tld t0, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tld t1, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tadd t1, t1, t0",
+      "\taddi sp, sp, -8",
+      "\tsd t1, 0(sp)",
+      "\tld t0, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\taddi sp, sp, -8",
+      "\tsd t0, 0(sp)",
+      "\tld a0, 0(sp)",
+      "\taddi sp, sp, 8",
+      "\tld ra, 8(sp)",
+      "\tld fp, 0(sp)",
+      "\taddi sp, sp, 16",
+      "\tret"
+    ]
+    self.transforms(src_in, src_out)

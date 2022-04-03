@@ -1,42 +1,6 @@
-# a = (1 + 41) + 3 * 5
-# a = 1 - 41 + 3 * 5
-# a = 1 - 41
-# b = 41
-# a = 1 - b
-# b = 103
-# a = 41 + 3 * 5 - b
-# a = 41 + 3 * 5 - 103
-# a = 46
-# b = a + 4
-# b = 104
-# b = 25
-# a = 23 > b 
-
-# if 23 < 25:
-#   a = 32
-# elif 23 == 25:
-#   a = 4
-# else:
-#   a = 23
-
-# a = 50
-# if 23 < 25:
-#   a = 100
-# else:
-#   a = 200
-# b = a + 4
-
-# a = 1
-# b = 37 + a
-# c = 41 + a
-
-# b = 41
-# if 3 < 4:
-#   a = 1 - b
-
-# def function(a, b):
-#   c = a + b
-#   return c
+#def function(a, b):
+#  c = a + b
+#  return c
 
 # function(1, function(2, 3))
 # a = 45
@@ -78,17 +42,31 @@
   # a = 0
 # b = a
 
-def loop_n(n):
-  i = n
-  while i < 10:
-    i = i + 1
-  return 0
+# def loop_n(n):
+#   while n < 10:
+#     n = n + 1
+#   return 0
 
-# loop_n(10)
+# def main():
+#   a = 10
+#   loop_n(a)
+# def plus_one(n):
+#   return n + 1
 
+# def main():
+#   a = plus_one(2)
+#   return 0
 
+# 32 < 34
 
-
-# a = 1
-# b = 2
-# a = b
+# if 1 < 2:
+#   a = 1
+#   b = 2
+#   c = 3
+#   d = 4 
+#   e = 5
+#   f = 6
+#   g = 7
+#   h = 9
+# a = 3
+# h = 8
