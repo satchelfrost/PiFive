@@ -314,20 +314,18 @@ class RISCV_Transpiler:
     self.free_scope()
 
   def visit_If(self, node : ast.If):
-    # Create a new scope
-    self.scope = Scope(name=self.scope.name, parent=self.scope)
-
     # Visit the test condition
     self.visit(node.test)
-
-    label_else = self.create_label("else")
-    label_end = self.create_label("end")
 
     # Grab the result of the test
     result : Reg = self.get_new_temp()
     self.instr.comment_pop(result)
     self.instr.pop(result)
     self.instr.newline()
+
+    # Create 1st scope
+    self.scope = Scope(name=self.scope.name, parent=self.scope)
+    label_else = self.create_label("else")
 
     # If the result is false, jump to the else block
     self.instr.comment("If condition is false, jump to else")
@@ -340,13 +338,20 @@ class RISCV_Transpiler:
     for statement in node.body:
       self.visit(statement)
 
-    # Visit the orelse
+    # Free the 1st scope
+    self.free_scope()
+
+    # Create 2nd scope
+    self.scope = Scope(name=self.scope.name, parent=self.scope)
+
+    # Label end
+    label_end = self.create_label("end")
     if node.orelse:
       self.instr.comment("If else wasn't taken, jump to end")
       self.instr.jump_label(label_end)
       self.instr.newline()
 
-    # Label the else/elsif
+    # Create scope for else again
     self.instr.label(label_else)
 
     # Visit the orelse statements
@@ -357,6 +362,7 @@ class RISCV_Transpiler:
     if node.orelse:
       self.instr.label(label_end)
 
+    # Free the 2nd scope
     self.free_scope()
 
   def visit_Expr(self, node : ast.Expr):
@@ -375,7 +381,7 @@ class RISCV_Transpiler:
 
     # Visit the arguments
     self.instr.comment(f'Computing functional arguments for "{node.func.id}"')
-    for arg in node.args:
+    for arg in reversed(node.args):
       self.visit(arg)
 
     # Ensure that the function is called with arguments in the right registers
