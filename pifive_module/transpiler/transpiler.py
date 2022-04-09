@@ -4,6 +4,7 @@ from .instruction_maker import InstructionMaker, BinOp, BranchOp
 from .register_pool import RegPool
 from .registers import Reg, RegType
 from .symbol_table import SymbolTable
+from .symbols import Function
 
 class RISCV_Transpiler:
   def __init__(self, comments_on=False):
@@ -11,6 +12,8 @@ class RISCV_Transpiler:
     self.scope = Scope()
     self.instr = InstructionMaker(comments_on)
     self.reg_pool = RegPool()
+    self.aliased = {"print" : self.print_routine}
+    self.print_label = False
 
   ### Helper Functions ###
   def reset(self):
@@ -20,15 +23,15 @@ class RISCV_Transpiler:
     self.sym_tab.reset()
 
   def transpile(self, node):
-    # Insert header here
     self.instr.newline()
     self.visit(node)
-    # Insert footer here
+    if self.print_label:
+      self.instr.print_int_label()
 
   def assign_reg_if_inactive(self, var : Variable, reg_type : RegType):
     '''Check if variable has active register, and if not then get one'''
     if not var.reg_active:
-      if not self.reg_pool.is_reg_type_avilable(reg_type):
+      if not self.reg_pool.is_reg_type_available(reg_type):
         # self.sym_tab.save_and_free_reg(self.scope.name, self.instr)
         raise RuntimeError("Program has exploded, there are no more registers.")
       var.reg = self.reg_pool.get_next_reg(reg_type)
@@ -40,7 +43,7 @@ class RISCV_Transpiler:
 
   def get_new_temp(self) -> Reg:
     '''Get a new temporary register'''
-    if not self.reg_pool.is_reg_type_avilable(RegType.temp_regs):
+    if not self.reg_pool.is_reg_type_available(RegType.temp_regs):
       # self.sym_tab.save_and_free_reg(self.scope.name, self.instr)
       raise RuntimeError("Program has exploded, there are no more registers.")
     return self.reg_pool.get_next_reg(RegType.temp_regs)
@@ -63,6 +66,40 @@ class RISCV_Transpiler:
       self.instr.comment_reg_free(reg)
     self.instr.newline()
     self.scope = self.scope.parent
+
+  def print_routine(self, node : ast.Call):
+    # Set the print label
+    self.print_label = True
+
+    # Make sure there is only on argument
+    if len(node.args) != 1:
+      raise RuntimeError(f'Incorrect number of arguments for print function!')
+
+    # Visit the argument
+    self.visit(node.args[0])
+
+    # Make sure that a0 and a1 are not used
+
+
+    # Pop result into a1
+    self.instr.comment_pop(Reg.a1)
+    self.instr.pop(Reg.a1)
+    self.instr.newline()
+
+    # load the print_int label into a0
+    self.instr.comment("Load print_int label into a0")
+    self.instr.load_label(Reg.a0, "print_int")
+    self.instr.newline()
+
+    # Call the function
+    self.instr.comment(f"Call funcion printf")
+    self.instr.call("printf")
+    self.instr.newline()
+
+    # Push the result of the function call
+    self.instr.comment(f'Push dummy result to stack')
+    self.instr.push_reg(Reg.a0)
+    self.instr.newline()
 
   #### Visitor Nodes ####
   def visit(self, node):
@@ -366,6 +403,13 @@ class RISCV_Transpiler:
     self.free_scope()
 
   def visit_Expr(self, node : ast.Expr):
+    # Check if we are calling main--special case
+    if isinstance(node.value, ast.Call):
+      call : ast.Call = node.value
+      if call.func.id == "main":
+        return
+
+    # Visit the expression
     self.visit(node.value)
 
     # This will be the case when the expression is a call to a function
@@ -374,8 +418,14 @@ class RISCV_Transpiler:
     self.instr.newline()
 
   def visit_Call(self, node : ast.Call):
+    # Check for the built-in functions
+    if node.func.id in self.aliased:
+      aliased_routine = self.aliased[node.func.id]
+      aliased_routine(node)
+      return
+
     # First check if the number of arguments is correct
-    func = self.scope.lookup_func(node.func.id)
+    func : Function = self.scope.lookup_func(node.func.id)
     if len(func.args) != len(node.args):
       raise RuntimeError(f'Incorrect number of arguments for function "{func.name}"!')
 

@@ -18,12 +18,16 @@ class RegPool:
         return reg
     return None
 
-  def is_reg_type_avilable(self, reg_type : RegType) -> bool:
+  def is_reg_type_available(self, reg_type : RegType) -> bool:
     '''Checks if register of a particular type is available'''
     for reg in reg_type.value:
       if self.available_regs[reg.value]:
         return True
     return False
+
+  def is_reg_available(self, reg : Reg) -> bool:
+    '''Checks if a register is available'''
+    return self.available_regs[reg.value]
   
   def free_reg(self, reg : Reg):
     '''Make a register available again'''

@@ -91,7 +91,17 @@ class InstructionMaker:
     self.load_imm(reg, 0)
 
   def label(self, label):
+    if label == "main":
+      self.instr_buffer.append(f"\t.globl main")
     self.instr_buffer.append(f"{label}:")
+
+  def print_int_label(self):
+    self.label("print_int")
+    self.comment("Prints an integer to stdout.")
+    self.instr_buffer.append('\t"%d\\n"')
+
+  def load_label(self, reg : Reg, label : str):
+    self.instr_buffer.append(f"\tlla {reg.name}, {label}")
 
   def pop(self, reg : Reg):
     self.instr_buffer.append(f"\tld {reg.name}, 0(sp)")

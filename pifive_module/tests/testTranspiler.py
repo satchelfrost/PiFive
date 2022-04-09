@@ -657,6 +657,7 @@ class TestTranspiler(unittest.TestCase):
       "\tld fp, 0(sp)",
       "\taddi sp, sp, 16",
       "\tret",
+      "\t.globl main",
       "main:",
       "\taddi sp, sp, -16",
       "\tsd ra, 8(sp)",

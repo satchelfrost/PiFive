@@ -31,7 +31,7 @@ class Scope:
     for var in vars:
       self.add_var(var)
 
-  def lookup_var(self, var_name : str):
+  def lookup_var(self, var_name : str) -> Variable:
     if var_name in self._variables:
       return self._variables[var_name]
     elif self.parent is not None:
@@ -54,8 +54,8 @@ class Scope:
       self._functions[name] = Function(name, args)
     else:
       raise RuntimeError(f'Function "{name}" already exists in the current scope!')
-  
-  def lookup_func(self, name : str):
+
+  def lookup_func(self, name : str) -> Function:
     if name in self._functions:
       return self._functions[name]
     elif self.parent is not None:
