@@ -11,7 +11,7 @@
             "program": "${workspaceFolder}/pifive.py",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["run", "-i", "inputs/input.py", "-c"]
+            "args": ["factorial.py", "-o", "factorial.s"]
         },
         {
             "name": "Test",
