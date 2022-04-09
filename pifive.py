@@ -1,27 +1,22 @@
+# Simple usage
+# python3 -m pifive factorial.py
+
+# Other options...
+# python3 -m <input.py> -o <output.s> <-p print> <-c comments>
+
 import argparse as ap
 import pifive_module as pifive
 
 def run_pifive(args):
-  pifive.run_pifive(args.input, args.print, args.comments)
-
-def run_tests(args):
-  pifive.run_tests()
+  pifive.run_pifive(args.input, args.print, args.comments, args.output)
 
 # Add arguments to argument parser 
 parser = ap.ArgumentParser()
-subparser = parser.add_subparsers(title="subcommands")
-
-# Run subcommand
-run_parser = subparser.add_parser("run", help="runs the PiFive transpiler")
-run_parser.add_argument("-i", "--input", help="input python file", type=str)
-run_parser.add_argument("-p", "--print", help="prints the output to the console", action="store_true")
-run_parser.add_argument("-c", "--comments", help="turn on assembly comments", action="store_true")
+parser.add_argument("input", help="input python file")
+parser.add_argument("-p", "--print", help="prints the output to the console", action="store_true")
+parser.add_argument("-c", "--comments", help="turn on assembly comments", action="store_true")
+parser.add_argument("-o", "--output", help="write the output to the file", type=str, default="output.s")
 parser.set_defaults(func=run_pifive)
-
-# Test subcommand
-test_parser = subparser.add_parser("test", help="runs tests on RISC-V transpiler")
-test_parser.set_defaults(func=run_tests)
-
 args = parser.parse_args()
 
 # Run the default function with parsed arguments
