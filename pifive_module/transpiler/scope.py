@@ -68,8 +68,9 @@ class Scope:
         active_vars.append(var)
 
     # Check for active variables in parent scope
-    if self.name == self.parent.name:
-      active_vars += self.parent.get_active_vars(reg_type)
+    if self.parent is not None:
+      if self.name == self.parent.name:
+        active_vars += self.parent.get_active_vars(reg_type)
 
     return active_vars
 
