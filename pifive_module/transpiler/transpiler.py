@@ -156,10 +156,17 @@ class RISCV_Transpiler:
     self.instr.load_label(Reg.a0, "print_int")
     self.instr.newline()
 
+    # Store any temporaries to the stack
+    temps = self.scope.get_active_vars(RegType.temp_regs)
+    self.save_vars_to_stack(temps)
+
     # Call the function
     self.instr.comment(f"Call funcion printf")
     self.instr.call("printf")
     self.instr.newline()
+
+    # Restore any temporaries from the stack
+    self.load_vars_from_stack(temps)
 
     # Push the result of the function call
     self.instr.comment(f'Push dummy result to stack')
@@ -392,7 +399,7 @@ class RISCV_Transpiler:
 
   def visit_While(self, node : ast.For):
     # Create a new scope
-    self.scope = Scope(name=self.scope.name, parent=self.scope)
+    self.scope = Scope(name=self.scope.name, parent=self.scope, locals_count=self.scope.locals_count)
 
     # Create a labels for the loop and break
     label_while = self.create_label("while")
@@ -432,7 +439,7 @@ class RISCV_Transpiler:
     self.instr.newline()
 
     # Create 1st scope
-    self.scope = Scope(name=self.scope.name, parent=self.scope)
+    self.scope = Scope(name=self.scope.name, parent=self.scope, locals_count=self.scope.locals_count)
     label_else = self.create_label("else")
 
     # If the result is false, jump to the else block
@@ -450,7 +457,7 @@ class RISCV_Transpiler:
     self.free_scope()
 
     # Create 2nd scope
-    self.scope = Scope(name=self.scope.name, parent=self.scope)
+    self.scope = Scope(name=self.scope.name, parent=self.scope, locals_count=self.scope.locals_count)
 
     # Label end
     label_end = self.create_label("end")
