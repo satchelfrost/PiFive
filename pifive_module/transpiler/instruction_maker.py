@@ -97,8 +97,8 @@ class InstructionMaker:
 
   def print_int_label(self):
     self.label("print_int")
-    self.comment("Prints an integer to stdout.")
-    self.instr_buffer.append('\t"%d\\n"')
+    self.comment("String to print our integer")
+    self.instr_buffer.append('\t.string "%d\\n"')
 
   def load_label(self, reg : Reg, label : str):
     self.instr_buffer.append(f"\tlla {reg.name}, {label}")
@@ -122,17 +122,23 @@ class InstructionMaker:
   def call(self, label : str):
     self.instr_buffer.append(f"\tcall {label}")
 
-  def prologue(self):
-    self.instr_buffer.append("\taddi sp, sp, -16")
-    self.instr_buffer.append("\tsd ra, 8(sp)")
-    self.instr_buffer.append("\tsd fp, 0(sp)")
-    self.instr_buffer.append("\taddi fp, sp, 16")
+  def prologue(self, extra_stack_space : int = 0):
+    self.instr_buffer.append(f"\taddi sp, sp, -{16 + extra_stack_space * 8}")
+    self.instr_buffer.append(f"\tsd ra, {8 + extra_stack_space * 8}(sp)")
+    self.instr_buffer.append(f"\tsd fp, {0 + extra_stack_space * 8}(sp)")
+    self.instr_buffer.append(f"\taddi fp, sp, {16 + extra_stack_space * 8}")
 
-  def epilogue(self):
-    self.instr_buffer.append("\tld ra, 8(sp)")
-    self.instr_buffer.append("\tld fp, 0(sp)")
-    self.instr_buffer.append("\taddi sp, sp, 16")
+  def epilogue(self, extra_stack_space : int = 0):
+    self.instr_buffer.append(f"\tld ra, {8 + extra_stack_space * 8}(sp)")
+    self.instr_buffer.append(f"\tld fp, {0 + extra_stack_space * 8}(sp)")
+    self.instr_buffer.append(f"\taddi sp, sp, {16 + extra_stack_space * 8}")
     self.ret()
+
+  def store_reg(self, reg : Reg, offset : int):
+    self.instr_buffer.append(f"\tsd {reg.name}, -{(offset + 1) * 8 + 16}(fp)")
+
+  def load_reg(self, reg : Reg, offset : int):
+    self.instr_buffer.append(f"\tld {reg.name}, -{(offset + 1) * 8 + 16}(fp)")
 
   def ret(self):
     self.instr_buffer.append("\tret")

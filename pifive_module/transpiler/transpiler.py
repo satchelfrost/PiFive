@@ -6,6 +6,38 @@ from .registers import Reg, RegType
 from .symbol_table import SymbolTable
 from .symbols import Function
 
+class LocalsCounter(ast.NodeVisitor):
+  def __init__(self, func : ast.FunctionDef, scope : Scope):
+    self._names = []
+    self._scope = scope
+
+    # Count the arguments
+    for arg in func.args.args:
+      self._names.append(arg.arg)
+
+    # Visit the function body
+    for statement in func.body:
+      self.visit(statement)
+
+  def visit_Assign(self, node : ast.Assign):
+    # Check if single target
+    if len(node.targets) != 1:
+      raise RuntimeError("Only single assignment allowed.")
+
+    # Visit the target
+    self.visit(node.targets[0])
+
+  def visit_Name(self, node : ast.Name):
+    if isinstance(node.ctx, ast.Store):
+      # Count up the new variables introduced
+      accounted_for = node.id in self._names
+      in_scope = self._scope.in_scope(node.id)
+      if not accounted_for and not in_scope:
+        self._names.append(node.id)
+
+  def count(self):
+    return len(self._names)
+
 class RISCV_Transpiler:
   def __init__(self, comments_on=False):
     self.sym_tab = SymbolTable()
@@ -32,8 +64,9 @@ class RISCV_Transpiler:
     '''Check if variable has active register, and if not then get one'''
     if not var.reg_active:
       if not self.reg_pool.is_reg_type_available(reg_type):
-        # self.sym_tab.save_and_free_reg(self.scope.name, self.instr)
-        raise RuntimeError("Program has exploded, there are no more registers.")
+        self.restore_reg_type(reg_type)
+      if not self.reg_pool.is_reg_type_available(reg_type):
+        raise RuntimeError(f'Failed to restore reg of type "{reg_type.name}"')
       var.reg = self.reg_pool.get_next_reg(reg_type)
       var.reg_active = True
 
@@ -41,11 +74,43 @@ class RISCV_Transpiler:
     for reg in regs:
       self.assign_reg_if_inactive(reg, reg_type)
 
+  def restore_reg_type(self, reg_type : RegType):
+    var : Variable = self.scope.get_next_var(reg_type)
+    self.save_var_to_stack(var)
+
+  def save_var_to_stack(self, var : Variable):
+    if var.reg is None:
+      raise RuntimeError(f'Register is none for variable "{var.name}"')
+    var.reg_active = False
+    self.instr.comment(f'Saving reg "{var.reg.name}" to stack')
+    self.instr.store_reg(var.reg, var.offset)
+    self.reg_pool.free_reg(var.reg)
+    self.instr.comment_reg_free(var.reg)
+    self.instr.newline()
+
+  def save_vars_to_stack(self, vars : list):
+    for var in vars:
+      self.save_var_to_stack(var)
+
+  def load_var_from_stack(self, var : Variable):
+    if var.reg is None:
+      raise RuntimeError(f'Register is none for variable "{var.name}"')
+    var.reg_active = True
+    self.instr.comment(f'Loading reg "{var.reg.name}" from stack')
+    self.instr.load_reg(var.reg, var.offset)
+    self.reg_pool.take_reg(var.reg)
+    self.instr.newline()
+
+  def load_vars_from_stack(self, vars : list):
+    for var in vars:
+      self.load_var_from_stack(var)
+
   def get_new_temp(self) -> Reg:
     '''Get a new temporary register'''
     if not self.reg_pool.is_reg_type_available(RegType.temp_regs):
-      # self.sym_tab.save_and_free_reg(self.scope.name, self.instr)
-      raise RuntimeError("Program has exploded, there are no more registers.")
+      self.restore_reg_type(RegType.temp_regs)
+    if not self.reg_pool.is_reg_type_available(RegType.temp_regs):
+      raise RuntimeError(f'Failed to restore reg of type "{RegType.temp_regs.name}"')
     return self.reg_pool.get_next_reg(RegType.temp_regs)
 
   def anonymous_push(self, value : str):
@@ -116,17 +181,20 @@ class RISCV_Transpiler:
       self.visit(statement)
 
   def visit_FunctionDef(self, node : ast.FunctionDef):
+    # Used to figure out how much stack space to allocate
+    locals = LocalsCounter(node, self.scope)
+
     # Add this function to the current scope
     func_args = [Variable(arg.arg) for arg in node.args.args]
     self.assign_regs_if_inactive(func_args, RegType.arg_regs)
     self.scope.add_func(node.name, func_args)
 
     # Create a new scope
-    self.scope = Scope(name=node.name, parent=self.scope)
+    self.scope = Scope(name=node.name, parent=self.scope, locals_count=locals.count())
     self.scope.add_vars(func_args)
     self.instr.label(node.name)
     self.instr.comment_prologue(node.name)
-    self.instr.prologue()
+    self.instr.prologue(self.scope.locals_count)
     self.instr.newline()
 
     # Visit statements in function body
@@ -139,7 +207,7 @@ class RISCV_Transpiler:
       self.instr.load_imm(Reg.a0, 0)
       self.instr.newline()
       self.instr.comment_epilogue(node.name)
-      self.instr.epilogue()
+      self.instr.epilogue(self.scope.locals_count)
       self.instr.newline()
 
     self.free_scope()
@@ -155,7 +223,7 @@ class RISCV_Transpiler:
 
     # Add epilogue to return
     self.instr.comment_epilogue(self.scope.name)
-    self.instr.epilogue() # epilogue includes "ret" instruction
+    self.instr.epilogue(self.scope.locals_count) # epilogue includes "ret" instruction
     self.instr.newline()
 
   def visit_BinOp(self, node : ast.BinOp):
@@ -170,6 +238,9 @@ class RISCV_Transpiler:
     # Check the node's context: Load, Store, or Del
     if isinstance(node.ctx, ast.Load):
       var : Variable = self.scope.lookup_var(node.id)
+      if var.reg is None:
+        reg : Reg = self.get_new_temp()
+        self.instr.load_reg(reg, var.offset)
       self.instr.comment_reg_push(var.reg, var.name)
       self.instr.push_reg(var.reg)
       self.instr.newline()
@@ -440,10 +511,17 @@ class RISCV_Transpiler:
       self.instr.pop(var_arg.reg)
       self.instr.newline()
 
+    # Store any temporaries to the stack
+    temps = self.scope.get_active_vars(RegType.temp_regs) 
+    self.save_vars_to_stack(temps)
+
     # Call the function
     self.instr.comment(f'Call funcion "{node.func.id}"')
     self.instr.call(node.func.id)
     self.instr.newline()
+
+    # Restore any temporaries from the stack
+    self.load_vars_from_stack(temps)
 
     # Push the result of the function call
     self.instr.comment(f'Push result of "{node.func.id}" stored in "{Reg.a0.name}"')
