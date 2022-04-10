@@ -3,44 +3,11 @@ from .scope import Scope, Variable
 from .instruction_maker import InstructionMaker, BinOp, BranchOp
 from .register_pool import RegPool
 from .registers import Reg, RegType
-from .symbol_table import SymbolTable
 from .symbols import Function
-
-class LocalsCounter(ast.NodeVisitor):
-  def __init__(self, func : ast.FunctionDef, scope : Scope):
-    self._names = []
-    self._scope = scope
-
-    # Count the arguments
-    for arg in func.args.args:
-      self._names.append(arg.arg)
-
-    # Visit the function body
-    for statement in func.body:
-      self.visit(statement)
-
-  def visit_Assign(self, node : ast.Assign):
-    # Check if single target
-    if len(node.targets) != 1:
-      raise RuntimeError("Only single assignment allowed.")
-
-    # Visit the target
-    self.visit(node.targets[0])
-
-  def visit_Name(self, node : ast.Name):
-    if isinstance(node.ctx, ast.Store):
-      # Count up the new variables introduced
-      accounted_for = node.id in self._names
-      in_scope = self._scope.in_scope(node.id)
-      if not accounted_for and not in_scope:
-        self._names.append(node.id)
-
-  def count(self):
-    return len(self._names)
+from .locals_counter import LocalsCounter
 
 class RISCV_Transpiler:
   def __init__(self, comments_on=False):
-    self.sym_tab = SymbolTable()
     self.scope = Scope()
     self.instr = InstructionMaker(comments_on)
     self.reg_pool = RegPool()
@@ -52,7 +19,6 @@ class RISCV_Transpiler:
     self.scope = Scope()
     self.reg_pool.reset()
     self.instr.reset()
-    self.sym_tab.reset()
 
   def transpile(self, node):
     self.instr.newline()
