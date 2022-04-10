@@ -12,25 +12,22 @@
         "stopOnEntry": true,
         "stopAtBreakpoints": true,
       },
-        {
-            "name": "Parse Input",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/pifive.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "args": ["factorial.py", "-o", "factorial.s"]
-        },
-        {
-            "name": "Test",
-            "type": "python",
-            "request": "launch",
-            "program":"${workspaceFolder}/pifive.py", 
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "args": [
-                "test"
-            ]
-        }
+      {
+          "name": "Parse Input",
+          "type": "python",
+          "request": "launch",
+          "program": "${workspaceFolder}/pifive.py",
+          "console": "integratedTerminal",
+          "justMyCode": true,
+          "args": ["factorial.py", "-o", "factorial.s"]
+      },
+      {
+          "name": "Test",
+          "type": "python",
+          "request": "launch",
+          "program":"${workspaceFolder}/tests.py",
+          "console": "integratedTerminal",
+          "justMyCode": true,
+      }
     ]
 }
