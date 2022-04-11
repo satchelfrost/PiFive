@@ -8,7 +8,6 @@ class RegPool:
   def reset(self):
     '''resets all registers to available'''
     self.available_regs = [True for i in range(len(Reg))]
-    self.bound_regs = [None for i in range(len(Reg))]
 
   def get_next_reg(self, reg_type : RegType):
     '''Get next available register of a particular type'''
@@ -18,17 +17,6 @@ class RegPool:
         # self.mru_reg = reg
         return reg
     return None
-
-  def bind_reg(self, reg : Reg, var : Variable):
-    '''Bind a register to a variable'''
-    self.bound_regs[reg.value] = var
-    var.reg = reg
-
-  def unbind_reg(self, reg : Reg):
-    '''Unbind a register from a variable'''
-    var = self.bound_regs[reg.value]
-    var.reg = None
-    self.bound_regs[reg.value] = None
 
   def lookup_bound_variable(self, reg : Reg) -> Variable:
     '''Lookup a bound variable by register'''
