@@ -4,7 +4,8 @@
 * [Overview](#overview)
 * [Defining the Subset of Python](#defining-the-subset-of-python)
 * [References & Source Material](#references-&-source-material)
-* [Software Setup / Compiling for Real Hardware](#software-setup)
+* [Using PiFive](#using-pifive)
+* [Running The Unit-Tests](#running-the-tests)
 
 ## Overview
 
@@ -137,3 +138,9 @@ $ gcc -o factorial factorial.s
 ```
 
 >**Note** I'm using the word compile here as opposed to transpile because gcc will actuall translate it to raw binary.
+
+## Running the tests
+
+```bash
+$ python3 -m tests
+```
