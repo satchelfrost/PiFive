@@ -10,13 +10,9 @@
 
 PiFive translates a sub-set of python source code to RISC-V assembly language.
 
-![](reference/images/PiFive.png)
-
-Throughout the semester I will be organizing the project using Trello a software organization tool; a link to that board can be found [here](https://trello.com/b/26kdfMJz/senior-project). In addition, I will be updating a slide deck to organize my thoughts and build towards the final presentation; a link to that slide deck can be found here [here](https://docs.google.com/presentation/d/1rj_9L3pqZ0XZLCmFNdeaLof7cu6qTt5_TXOBURj3eK4/edit#slide=id.g113c484dce6_0_274).
+![](PiFive.png)
 
 ## Defining the Subset of Python 
-
-Making a fully compliant Python-to-RISC-V transpiler in a semester is an infeasible goal for myself. In other words, a transpiler that could take in any valid Python script and output RISC-V assembly is probably not doable (by myself) in this time-frame because of all the glorius syntactic-sugar that Python allows. It natrually follows that I have decided to utilize a subset of Python, but how does one define a subset? In other words, what notation can be utilized to tersely express what `PiFive` does.
 
 Normally, one would define the language using a grammar (for example, utilizing a Backus-Naur-like form), this is especially useful when we are writing the lexer/parser from scratch. However, the Python [ast module](https://docs.python.org/3/library/ast.html) already handles lexing/parsing for us. Hence, the focus of this project isn't so much building or even populating the abstract syntax tree (ast), but instead deciding what to do with each node as it is visited in the tree. To digress slightly, if we use the `ast` module to parse a python script which utilizes a class, but we have not implmented a way to translate classes to assembly, then we will need to throw an exception. First, we need to concretely define which features we will use.
 
@@ -31,13 +27,7 @@ def square(x : int) -> int:
 
 The first node in the `ASDL` we would encounter using a debugger would be `ast.Module` followed by `ast.FunctionDef` followed by `ast.Return`, etc. As one steps through the debugger and references the `ASDL`, it begins to make sense how the parser has put together the tree.
 
-In order to define which subset of Python will be utilized we will simply define an simpler `ASDL` for ourselves.
-
-Looking again at the definition of `square()`, we may notice the two `int`'s, one inside the parenthesis, and another after the "`->`". If you are only a little bit familiar with Python this may look odd. These are optional annotations allowed in Python syntax. In practice, they give the programmer more information about types. For example, in the case of `square()`, the `int` after the "`:`" tells us that `x` is an integer, whereas the `int` after the "`->`" tells us that `square()` returns an integer.
-
-Though, in practice annotations may be used for: giving the programmar more information, making autocomplete better, and perhaps compiler optimization, we will be using them to make `PiFive` strongly-typed. In other words, if we do not find these annotations for `ast.FunctionDef` and `ast.AnnAssign` nodes, then an exception will be thrown.
-
-`PiFive`'s ASDL (subject to improve if time allows):
+`PiFive`'s ASDL:
 
 ```python
 module Python
@@ -87,8 +77,6 @@ module Python
 }
 ```
 
-Nodes which might be added depending on time could be `ast.List`, `ast.Subscript`, `ast.Try`, `ast.ExceptHandler`, & `ast.Import`.
-
 ## References & Source Material
 
 There are several references that I will place here which are either instructional or relevent in some way.
@@ -105,51 +93,47 @@ There are several references that I will place here which are either instruction
 8. *Book* : Engineering A Compiler, Cooper & Torczon
 9. *Website* : Python to C++ transpiler : [link](https://github.com/lukasmartinelli/py14) 
 
-## Software Setup
+## Using PiFive
 
-Aside from Python 3.9.7+, there are no software requirements in order to run this project. However, one of the goals of this project is for the output assembly from `PiFive` to be compiled down to a raw executable which can be run on real hardware (i.e. HiFive Unmatched). If you only care about seeing the assembly output from PiFive, then this step is unnecessary, however if you either have the HiFive Unmatched, or are just intereseted in seeing how the assembly can be compiled to an executable, then you can follow these steps to install the compiler:
-
-A prebuilt version of the compiler can supposedly be found [here](https://toolchains.bootlin.com/releases_riscv64.html), though I have personally gone the compile-from-source route. Full instructions and explanations on compiling from source can be found in reference [3], but the following may be sufficient: 
-
-First, install the source in a directory
+In order to see all of the available options simply run:
 
 ```bash
-$ mkdir x-tools
-$ cd x-tools
-$ git clone https://github.com/crosstool-ng/crosstool-ng
-$ cd crosstool-ng
-```
-Next, build the tool
-```bash
-mkdir rv64gc-linux-gnu
-cd rv64gc-linux-gnu
-ct-ng riscv64-unknown-linux-gnu
-ct-ng build
-cd ..
+$ python3 -m pifive -h
 ```
 
-To test if everything works, write a simple hello world program and compile:
+For example to transpile the `factorial.py` example run:
 
 ```bash
-$ ~/x-tools/riscv64-unknown-linux-gnu/bin/riscv64-unknown-linux-gnu-gcc ./hello.c -o
-hello
+$ python3 -m pifive factorial.py -c -p -o factorial.s
 ```
 
-To see the output of how gcc translates `hello.c` to assembly use the following: 
-```bash
-$ ~/x-tools/riscv64-unknown-linux-gnu/bin/riscv64-unknown-linux-gnu-gcc -S hello.c -o hello.s
+>**Note** that the `-h` explains what each of the flags do.
+
+Here's a very small snippet of the output:
+
+```mips
+factorial:
+	# Prologue for "factorial"
+	addi sp, sp, -24
+	sd ra, 16(sp)
+	sd fp, 8(sp)
+	addi fp, sp, 24
+
+	# Push variable "n" in register "a1" to stack
+	addi sp, sp, -8
+	sd a1, 0(sp)
+
+	# Push value "0" to the stack
+	addi sp, sp, -8
+	li t0, 0
+	sd t0, 0(sp)
+	# Register "t0" freed
 ```
-This is especially helpful for learning some RISC-V assembly and also checking to see if the output of `PiFive` is close to what is expected.
 
-Finally, in order to compile an assembly file down to a raw executable use the following:
+You should then be able to compile it using gcc. Of course you won't be able to run it unless you have an emulator or actual hardware.
 
 ```bash
-~/x-tools/riscv64-unknown-linux-gnu/bin/riscv64-unknown-linux-gnu-as hello.s -o example
+$ gcc -o factorial factorial.s
 ```
 
-Note that this program will only run on native hardware. You can however generate an assembly listing from the binary file using the following command:
-
-```bash
-$ ~/x-tools/riscv64-unknown-linux-gnu/bin/riscv64-unknown-linux-gnu-objdump -DS ./hello
->& hello.lst
-``` 
+>**Note** I'm using the word compile here as opposed to transpile because gcc will actuall translate it to raw binary.
